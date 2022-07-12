@@ -40,14 +40,10 @@ func main() {
 	errLog := log.New(os.Stdout, "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
 	config := os.Getenv(Config)
 
-	if len(config) <= 0 {
-		config = "./dns.yaml"
-	}
-
 	yamlConfig, err := ioutil.ReadFile(config)
 
 	if err != nil {
-		errLog.Fatal("Unable to process configuration", err)
+		errLog.Fatal(fmt.Sprintf("Unable to process configuration from %s. Check if %s environment variable was set correctly", config, Config), err)
 	}
 
 	c := &conf{}

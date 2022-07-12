@@ -1,7 +1,10 @@
 .PHONY: build
 
 build:
-	go build -o dns
+	go build -o ./bin/dns
 
-run: build
-	./dns
+run:
+	./bin/dns
+
+clean:
+	rm -rf ./bin/

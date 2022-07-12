@@ -27,22 +27,22 @@ func (a *application) loc(c *coordinates) (float64, error) {
 
 	xf, err := strconv.ParseFloat(c.X, bitSize)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	yf, err := strconv.ParseFloat(c.Y, bitSize)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	zf, err := strconv.ParseFloat(c.Z, bitSize)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	velf, err := strconv.ParseFloat(c.Vel, bitSize)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return (xf+yf+zf)*float64(a.configuration.SectorId) + velf, nil
