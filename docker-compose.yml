@@ -1,12 +1,16 @@
 version: "3.9"
 services:
   dns1:
-    build:
-      context: .
-      args:
-        DNS_CONFIG_ARGUMENT: ./test/dns1.yaml
-        PORT: 8081
-    entrypoint: ["make", "run"]
+    image: golang:1.18
+    entrypoint: /drone-navigation-system/test.sh
+    depends_on:
+      - dns2
+      - dns3
+      - dns4
+    volumes:
+      - .:/drone-navigation-system
+    environment:
+      - DNS_CONFIG=./test/dns1.yaml
     ports:
       - "8081:8081"
   dns2:

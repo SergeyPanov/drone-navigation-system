@@ -5,7 +5,6 @@ ENV DNS_CONFIG=/etc/drone-navigation-system/dns.yaml
 WORKDIR /drone-navigation-system
 COPY ["*.go", "Makefile", "go.mod", "go.sum", "/drone-navigation-system/"]
 COPY ${DNS_CONFIG_ARGUMENT} /etc/drone-navigation-system/dns.yaml
-RUN mkdir -p /etc/drone-navigation-system/
 RUN make build
 EXPOSE $PORT
 ENTRYPOINT ["make", "run"]
