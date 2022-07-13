@@ -8,6 +8,3 @@ run:
 
 clean:
 	rm -rf ./bin/
-
-test:
-	go test -v
