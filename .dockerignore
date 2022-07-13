@@ -1,6 +1,5 @@
-test
 test.sh
 Dockerfile
-docker-compose.yml
+*_test.go
 README.md
 .gitignore

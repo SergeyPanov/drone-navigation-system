@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  dns1:
+    build:
+      context: .
+      args:
+        DNS_CONFIG_ARGUMENT: ./test/dns1.yaml
+        PORT: 8081
+    entrypoint: ["make", "run"]
+    ports:
+      - "8081:8081"
+  dns2:
+    build:
+      context: .
+      args:
+        DNS_CONFIG_ARGUMENT: ./test/dns2.yaml
+        PORT: 8082
+    ports:
+      - "8082:8082"
+  dns3:
+    build:
+      context: .
+      args:
+        DNS_CONFIG_ARGUMENT: ./test/dns3.yaml
+        PORT: 8083
+    ports:
+      - "8083:8083"
+  dns4:
+    build:
+      context: .
+      args:
+        DNS_CONFIG_ARGUMENT: ./test/dns4.yaml
+        PORT: 8084
+    ports:
+      - "8084:8084"

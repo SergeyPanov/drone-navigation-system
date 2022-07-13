@@ -1,0 +1,5 @@
+sectorId: 1
+address: "dns1:8081"
+allies:
+  - "http://dns2:8082"
+  - "http://dns3:8083"

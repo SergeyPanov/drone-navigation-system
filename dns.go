@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -8,8 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 )
 
 const AlliesToNotAsk = "Allies-To-Not-Ask"
@@ -18,8 +17,7 @@ const SectorDirectionEndpoint = "/sector/direction"
 
 type application struct {
 	http.Client
-	configuration *conf
-	externalIp    *string
+	configuration *config
 	errorLog      *log.Logger
 }
 
@@ -30,7 +28,7 @@ type coordinates struct {
 	Vel string `json:"vel" binding:"required,numeric"`
 }
 
-type conf struct {
+type config struct {
 	SectorId int      `yaml:"sectorId"`
 	Address  string   `yaml:"address"`
 	Allies   []string `yaml:"allies"`
@@ -38,19 +36,11 @@ type conf struct {
 
 func main() {
 	errLog := log.New(os.Stdout, "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
-	config := os.Getenv(Config)
+	pathToConfig := os.Getenv(Config)
 
-	yamlConfig, err := ioutil.ReadFile(config)
-
+	c, err := configuration(pathToConfig)
 	if err != nil {
-		errLog.Fatal(fmt.Sprintf("Unable to process configuration from %s. Check if %s environment variable was set correctly", config, Config), err)
-	}
-
-	c := &conf{}
-	err = yaml.Unmarshal(yamlConfig, c)
-
-	if err != nil {
-		errLog.Fatal("Corrupted config file", err)
+		errLog.Fatal(err)
 	}
 
 	app := application{
@@ -58,91 +48,32 @@ func main() {
 		errorLog:      errLog,
 	}
 
-	r := gin.Default()
-	r.POST(fmt.Sprintf("%s/:sectorId", SectorDirectionEndpoint), app.directionToSector)
-	err = r.Run(app.configuration.Address)
-
+	router := app.router()
+	err = router.Run(app.configuration.Address)
 	if err != nil {
 		app.errorLog.Fatal("Unable to start server ", err)
 	}
 }
 
-func (a *application) directionToSector(c *gin.Context) {
-	secId := c.Param("sectorId")
-	id, err := strconv.Atoi(secId)
+func configuration(path string) (*config, error) {
+	yamlConfig, err := ioutil.ReadFile(path)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid sectorId",
-			"error":   err,
-		})
-		return
+		return nil, errors.New(fmt.Sprintf("Unable to process configuration from %s. Check if %s environment variable was set correctly.\n%s", path, Config, err.Error()))
 	}
 
-	coords := &coordinates{}
-	err = c.ShouldBindJSON(coords)
+	c := &config{}
+	err = yaml.Unmarshal(yamlConfig, c)
+
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid coordinates",
-			"error":   err,
-		})
-		return
+		return nil, errors.New(fmt.Sprintf("Unable to unmarshal the config file %s.\n%s", Config, err.Error()))
 	}
 
-	if id == a.configuration.SectorId {
-		loc, err := a.loc(coords)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Unable to parse one of the coordinates",
-				"error":   err,
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"loc": loc,
-		})
+	return c, nil
+}
 
-		return
-	} else {
-		alliesToNotAsk := c.GetHeader(AlliesToNotAsk)
+func (a *application) router() *gin.Engine {
+	r := gin.Default()
+	r.POST(fmt.Sprintf("%s/:sectorId", SectorDirectionEndpoint), a.directionToSector)
 
-		for _, ally := range a.configuration.Allies {
-			if strings.Contains(alliesToNotAsk, ally) {
-				continue
-			}
-
-			request, err := a.requestToAlly(ally, id, coords)
-			if err != nil {
-				a.logServerError(err)
-				continue
-			}
-
-			scheme := "http"
-			if c.Request.TLS != nil {
-				scheme = "https"
-			}
-
-			allies := request.Header.Get(AlliesToNotAsk)
-			request.Header.Set(AlliesToNotAsk, strings.Join([]string{allies, fmt.Sprintf("%s://%s", scheme, a.configuration.Address)}, ";"))
-
-			allyResp, err := a.queryAlly(request)
-			if err != nil {
-				a.logServerError(err)
-				continue
-			}
-
-			if allyResp.code == http.StatusOK {
-				c.JSON(http.StatusOK, gin.H{
-					"loc": allyResp.loc,
-				})
-
-				return
-			}
-		}
-
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": fmt.Sprintf("Unnable to find a direction to the sector %d\n", id),
-		})
-
-		return
-	}
+	return r
 }

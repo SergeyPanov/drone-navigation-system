@@ -45,7 +45,7 @@ func (a *application) loc(c *coordinates) (float64, error) {
 		return 0, err
 	}
 
-	return (xf+yf+zf)*float64(a.configuration.SectorId) + velf, nil
+	return math.Round(((xf+yf+zf)*float64(a.configuration.SectorId)+velf)*100) / 100, nil
 }
 
 func (a *application) requestToAlly(ally string, sectorId int, coords *coordinates) (*http.Request, error) {
